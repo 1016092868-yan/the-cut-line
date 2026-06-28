@@ -31,14 +31,16 @@ const Obstacles3D = {
       this.textures[name] = tex;
     });
 
-    // 6 种障碍物定义
+    // 障碍物定义（含下滑专用低矮型 + 跳跃专用高空型）
     this.types = [
-      { name: 'deadline', texKey: 'deadline', color: 0xE53935, scale: [1.0, 0.7, 0.6], damage: 5, shape: 'box' },
-      { name: 'boss', texKey: 'toxic-boss', color: 0xFF6F00, scale: [0.5, 1.6, 0.5], damage: 8, shape: 'cylinder' },
-      { name: 'traffic', texKey: 'traffic-jam', color: 0xFDD835, scale: [1.8, 0.9, 0.8], damage: 3, shape: 'box' },
-      { name: 'burnout', texKey: 'burnout', color: 0xFF1744, scale: [0.7, 1.2, 0.7], damage: 15, shape: 'sphere' },
-      { name: 'crash', texKey: 'market-crash', color: 0x880E4F, scale: [0.8, 0.8, 0.8], damage: 10, shape: 'diamond' },
-      { name: 'sick', texKey: 'sick-wave', color: 0x00C853, scale: [0.8, 0.9, 0.8], damage: 10, shape: 'sphere' },
+      // 低矮障碍物（需下滑躲避，跳跃无法越过）
+      { name: 'barrier', texKey: 'traffic-jam', color: 0xFDD835, scale: [2.0, 0.3, 0.6], damage: 5, shape: 'box', dodgeType: 'slide' },
+      // 高空障碍物（需跳跃躲避，下滑无用）
+      { name: 'deadline', texKey: 'deadline', color: 0xE53935, scale: [1.0, 0.7, 0.6], damage: 5, shape: 'box', dodgeType: 'jump' },
+      { name: 'boss', texKey: 'toxic-boss', color: 0xFF6F00, scale: [0.5, 1.6, 0.5], damage: 8, shape: 'cylinder', dodgeType: 'jump' },
+      { name: 'burnout', texKey: 'burnout', color: 0xFF1744, scale: [0.7, 1.2, 0.7], damage: 15, shape: 'sphere', dodgeType: 'jump' },
+      { name: 'crash', texKey: 'market-crash', color: 0x880E4F, scale: [0.8, 0.8, 0.8], damage: 10, shape: 'diamond', dodgeType: 'jump' },
+      { name: 'sick', texKey: 'sick-wave', color: 0x00C853, scale: [0.8, 0.9, 0.8], damage: 10, shape: 'sphere', dodgeType: 'jump' },
     ];
 
     // 创建对象池（25 个）
@@ -88,7 +90,8 @@ const Obstacles3D = {
       this.pool.push({
         group: obsGroup, body, edge, glow,
         active: false, type: t.name, hit: false, lane: 0,
-        damage: t.damage, yOff: t.scale[1] / 2, shape: t.shape, color: t.color
+        damage: t.damage, yOff: t.scale[1] / 2, shape: t.shape, color: t.color,
+        dodgeType: t.dodgeType || 'jump'
       });
     }
   },
@@ -133,22 +136,38 @@ const Obstacles3D = {
         const playerY = Player3D.bounceOffset;
 
         if (dx < 1.0 && dz < 1.5) {
-          if (playerY > 1.5) {
-            obs.hit = true; gd.dodgedObstacles++; gd.totalObstacles++;
-            if (dz < 0.6) {
-              gd.perfectDodges++; Combo.onPerfectDodge(); AudioFX.perfectDodge(); SettlementPanel.recordDodge(true);
+          const isSlideType = obs.dodgeType === 'slide';
+          const isJumpType = obs.dodgeType === 'jump';
+
+          if (isSlideType) {
+            // 低矮障碍物：只能下滑躲避，跳跃无法越过
+            if (Player3D.isSliding) {
+              obs.hit = true; gd.dodgedObstacles++; gd.totalObstacles++;
+              if (dz < 0.6) { gd.perfectDodges++; Combo.onPerfectDodge(); AudioFX.perfectDodge(); SettlementPanel.recordDodge(true); }
+              else { Combo.onNormalDodge(); AudioFX.dodge(); SettlementPanel.recordDodge(false); }
             } else {
-              Combo.onNormalDodge(); AudioFX.dodge(); SettlementPanel.recordDodge(false);
+              obs.hit = true; gd.totalObstacles++;
+              gd.stamina = Math.max(0, gd.stamina - obs.damage);
+              Effects3D.spawnHitEffect(obs.group.position);
+              Combo.onHit(); AudioFX.hit();
+              SettlementPanel.recordMiss();
             }
-          } else if (Player3D.isSliding && obs.group.position.y > 0.9) {
-            obs.hit = true; gd.dodgedObstacles++; gd.totalObstacles++;
-            Combo.onNormalDodge(); AudioFX.dodge(); SettlementPanel.recordDodge(false);
-          } else {
-            obs.hit = true; gd.totalObstacles++;
-            gd.stamina = Math.max(0, gd.stamina - obs.damage);
-            Effects3D.spawnHitEffect(obs.group.position);
-            Combo.onHit(); AudioFX.hit();
-            SettlementPanel.recordMiss();
+          } else if (isJumpType) {
+            // 高空障碍物：跳跃或下滑躲避
+            if (playerY > 1.5) {
+              obs.hit = true; gd.dodgedObstacles++; gd.totalObstacles++;
+              if (dz < 0.6) { gd.perfectDodges++; Combo.onPerfectDodge(); AudioFX.perfectDodge(); SettlementPanel.recordDodge(true); }
+              else { Combo.onNormalDodge(); AudioFX.dodge(); SettlementPanel.recordDodge(false); }
+            } else if (Player3D.isSliding) {
+              obs.hit = true; gd.dodgedObstacles++; gd.totalObstacles++;
+              Combo.onNormalDodge(); AudioFX.dodge(); SettlementPanel.recordDodge(false);
+            } else {
+              obs.hit = true; gd.totalObstacles++;
+              gd.stamina = Math.max(0, gd.stamina - obs.damage);
+              Effects3D.spawnHitEffect(obs.group.position);
+              Combo.onHit(); AudioFX.hit();
+              SettlementPanel.recordMiss();
+            }
           }
         }
       }

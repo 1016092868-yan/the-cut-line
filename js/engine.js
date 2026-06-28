@@ -41,10 +41,21 @@ const Engine = {
     AudioFX.init();
     SettlementPanel.init();
 
-    // 特殊规则
+    // 特殊规则 — 跑道开放数
     if (level.specialRules.includes('corporate_only')) {
       gd.currentLane = 0;
       gd.lanesOpen = 1;
+    } else if (level.specialRules.includes('corporate_and_startup')) {
+      gd.lanesOpen = 2;
+    } else if (level.specialRules.includes('three_lanes_unlocked')) {
+      gd.lanesOpen = 3;
+    } else {
+      gd.lanesOpen = 3; // 默认三跑道全开
+    }
+
+    // 特殊规则 — 切换冷却
+    if (level.specialRules.includes('no_switch_cooldown')) {
+      gd.switchCooldown = 0;
     }
 
     showScreen('game');
