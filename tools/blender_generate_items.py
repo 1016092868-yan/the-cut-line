@@ -50,7 +50,7 @@ def create_material(name, hex_color, roughness=0.5):
 
 def clear_scene():
     bpy.ops.object.select_all(action='SELECT')
-    bpy.ops.object.delete(use_confirm=False)
+    bpy.ops.object.delete()
     for mat in bpy.data.materials:
         bpy.data.materials.remove(mat)
 
