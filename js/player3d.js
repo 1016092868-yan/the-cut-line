@@ -162,11 +162,6 @@ const Player3D = {
     belt.position.y = 0.85;
     this.model.add(belt);
 
-    // ===== 角色名字标签 =====
-    this.nameLabel = this._createNameLabel(char.nameCN || char.name);
-    this.nameLabel.position.y = 2.6;
-    this.model.add(this.nameLabel);
-
     // ===== 底部光晕 =====
     const glowGeo = new THREE.RingGeometry(0.3, 0.5, 32);
     const glowMat = new THREE.MeshBasicMaterial({
@@ -232,7 +227,7 @@ const Player3D = {
     }
 
     // 跳跃（持续按住检测 + 冷却）
-    if (Input.isDown('Space') && !this.isJumping && !this.isSliding) {
+    if ((Input.isDown('Space') || Input.isDown('ArrowUp') || Input.isDown('KeyW')) && !this.isJumping && !this.isSliding) {
       this.isJumping = true;
       this.jumpTimer = 0.32;
     }
@@ -278,11 +273,6 @@ const Player3D = {
       const pulse = 0.2 + Math.sin(this.runTime * 2) * 0.08;
       this.glowRing.material.opacity = pulse;
       this.glowRing.scale.setScalar(1.0 + Math.sin(this.runTime * 1.5) * 0.1);
-    }
-
-    // 名字标签始终面朝相机
-    if (this.nameLabel && Game3D.camera) {
-      this.nameLabel.lookAt(Game3D.camera.position);
     }
   },
 

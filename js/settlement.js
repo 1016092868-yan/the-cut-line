@@ -26,6 +26,7 @@ const Settlement = {
     // 记录到深度结算面板
     SettlementPanel.recordCycle(settleData, score, []);
     AudioFX.settlementPopup();
+    HUD.addCustomLog(`周期${this.cycleCount}结算 · 净$${Math.floor(settleData.net).toLocaleString()} · 评分${score.rating}`, settleData.net >= 0 ? 'positive' : 'negative');
 
     // 显示浮层
     this.showFloat(settleData, score);
@@ -41,6 +42,7 @@ const Settlement = {
         setTimeout(() => Events.showPopup(event), 200);
         AudioFX.eventTrigger(event.category === 'positive');
         SettlementPanel.recordEvent(event);
+        HUD.addEvent(event);
       }
     }
 

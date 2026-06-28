@@ -1,13 +1,19 @@
 // ============================================================
-// hud.js — HUD渲染（DOM更新）
+// hud.js — HUD渲染（P4升级：角色信息 + 事件记录 + 跑道锁定提示）
 // ============================================================
 
 const HUD = {
+  eventLog: [],
 
-  init() {},
+  init() {
+    this.eventLog = [];
+    const logEl = document.getElementById('event-log');
+    if (logEl) logEl.style.display = 'block';
+  },
 
   update() {
     const gd = GameState.gameData;
+    if (!gd) return;
 
     // 净资产
     const nwEl = document.getElementById('hud-net-worth');
@@ -27,12 +33,25 @@ const HUD = {
     // Combo
     const comboEl = document.getElementById('hud-combo');
     if (comboEl) {
-      if (gd.combo >= 5) {
+      if (gd.combo >= 3) {
         comboEl.style.display = 'block';
         comboEl.textContent = `⚡ ×${gd.comboMultiplier.toFixed(1)}`;
       } else {
         comboEl.style.display = 'none';
       }
+    }
+
+    // 角色信息
+    const charInfo = document.getElementById('hud-char-info');
+    if (charInfo && GameState.selectedCharacter) {
+      const c = GameState.selectedCharacter;
+      const seg = gd.currentSegment === 's1' ? '早期' : gd.currentSegment === 's2' ? '中期' : '后期';
+      charInfo.innerHTML = `
+        <span class="hud-char-name">${c.nameCN}</span>
+        <span class="hud-char-seg">${seg}</span>
+        <span class="hud-char-cash">💵 $${Math.floor(gd.cash).toLocaleString()}</span>
+        <span class="hud-char-income">📈 $${Math.floor(gd.incomePerSec)}/s</span>
+      `;
     }
 
     // 状态图标
@@ -57,18 +76,72 @@ const HUD = {
       btnMarry.style.display = canMarry ? 'flex' : 'none';
     }
 
-    // ===== 跑道指示器高亮 =====
+    // ===== 跑道按钮状态 =====
     for (let i = 0; i < 3; i++) {
       const ind = document.getElementById('lane-ind-' + i);
       if (ind) {
-        if (i === gd.currentLane) {
-          ind.classList.add('active');
-        } else {
-          ind.classList.remove('active');
-        }
-        // 未开放的跑道隐藏
+        ind.style.opacity = i === gd.currentLane ? '0.9' : '0.3';
         ind.style.display = i < gd.lanesOpen ? 'block' : 'none';
       }
+      // 底部按钮锁定状态
+      const btnIds = ['hud-btn-corp', 'hud-btn-startup', 'hud-btn-hustle'];
+      const btn = document.getElementById(btnIds[i]);
+      if (btn) {
+        if (i >= gd.lanesOpen) {
+          btn.classList.add('hud-btn-locked');
+          btn.title = '未解锁 Unlocked later';
+        } else if (gd.switchCooldown > 0) {
+          btn.classList.add('hud-btn-locked');
+          btn.title = `冷却中 Cooldown: ${Math.ceil(gd.switchCooldown / gd.speed)}s`;
+        } else {
+          btn.classList.remove('hud-btn-locked');
+          btn.title = i === gd.currentLane ? '当前跑道 Current' : '点击切换 Switch';
+        }
+      }
     }
+
+    // 跑道锁定提示
+    const laneHint = document.getElementById('lane-lock-hint');
+    if (laneHint) {
+      if (gd.lanesOpen === 1) {
+        laneHint.style.display = 'block';
+        laneHint.textContent = '🔒 本关仅开放企业跑道 · Corp only this level';
+      } else if (gd.switchCooldown > 0) {
+        laneHint.style.display = 'block';
+        laneHint.textContent = `⏳ 切换冷却 ${Math.ceil(gd.switchCooldown / gd.speed)}s`;
+      } else {
+        laneHint.style.display = 'none';
+      }
+    }
+  },
+
+  // 添加事件记录
+  addEvent(event) {
+    this.eventLog.unshift({
+      time: new Date(),
+      name: event.nameCN || event.name,
+      category: event.category || 'neutral',
+      desc: event.descCN || event.desc || ''
+    });
+    if (this.eventLog.length > 20) this.eventLog.length = 20;
+    this.renderEventLog();
+  },
+
+  addCustomLog(text, category = 'neutral') {
+    this.eventLog.unshift({ time: new Date(), name: text, category, desc: '' });
+    if (this.eventLog.length > 20) this.eventLog.length = 20;
+    this.renderEventLog();
+  },
+
+  renderEventLog() {
+    const listEl = document.getElementById('event-log-list');
+    if (!listEl) return;
+    const colors = { positive: '#4CAF50', negative: '#F44336', neutral: '#FF9800' };
+    listEl.innerHTML = this.eventLog.map(e => `
+      <div class="event-log-entry" style="border-left:3px solid ${colors[e.category] || colors.neutral};">
+        <span class="event-log-dot" style="background:${colors[e.category] || colors.neutral};"></span>
+        <span class="event-log-name">${e.name}</span>
+      </div>
+    `).join('');
   }
 };

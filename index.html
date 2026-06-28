@@ -94,6 +94,7 @@
     <!-- Three.js 渲染到这里 -->
     <!-- HUD 叠加层 -->
     <div id="hud-top" class="hud-top-bar">
+      <div id="hud-char-info" class="hud-char-info"></div>
       <div class="hud-item hud-ready-badge" id="hud-marry-ready" style="display:none;">
         💍 可结婚 <span class="hud-key">M</span>
       </div>
@@ -106,6 +107,8 @@
       <div class="hud-combo" id="hud-combo" style="display:none;">⚡ ×1.0</div>
       <div class="hud-status-icons" id="hud-status-icons"></div>
     </div>
+    <!-- 跑道锁定提示 -->
+    <div id="lane-lock-hint" class="lane-lock-hint" style="display:none;"></div>
     <!-- 结算浮层 -->
     <div id="settlement-float" class="settlement-float" style="display:none;">
       <h4 id="settlement-title">📊 结算 Settlement</h4>
@@ -121,12 +124,17 @@
     </div>
     <!-- 底部操作栏 -->
     <div class="hud-bottom-bar">
-      <button class="hud-btn" style="background:#4CAF50;color:#fff;" onclick="Engine.switchToLane(0)">🏢 企业<span class="btn-cn">[1] Corp</span></button>
-      <button class="hud-btn" style="background:#2196F3;color:#fff;" onclick="Engine.switchToLane(1)">🚀 创业<span class="btn-cn">[2] Startup</span></button>
-      <button class="hud-btn" style="background:#9C27B0;color:#fff;" onclick="Engine.switchToLane(2)">💼 副业<span class="btn-cn">[3] Hustle</span></button>
+      <button class="hud-btn" id="hud-btn-corp" style="background:#4CAF50;color:#fff;" onclick="Engine.switchToLane(0)">🏢 企业<span class="btn-cn">[1] Corp</span></button>
+      <button class="hud-btn" id="hud-btn-startup" style="background:#2196F3;color:#fff;" onclick="Engine.switchToLane(1)">🚀 创业<span class="btn-cn">[2] Startup</span></button>
+      <button class="hud-btn" id="hud-btn-hustle" style="background:#9C27B0;color:#fff;" onclick="Engine.switchToLane(2)">💼 副业<span class="btn-cn">[3] Hustle</span></button>
       <button class="hud-btn" onclick="toggleShop()">🛒<span class="btn-cn">[B]Shop</span></button>
       <button class="hud-btn hud-btn-ready" id="btn-marry" onclick="triggerMarriage()" style="display:none;">💍<span class="btn-cn">[M]Marry</span></button>
       <button class="hud-btn hud-btn-pause" onclick="togglePause()">⏸<span class="btn-cn">Pause</span></button>
+    </div>
+    <!-- 事件记录面板 -->
+    <div id="event-log" class="event-log" style="display:none;">
+      <div class="event-log-title">📋 事件记录 Log</div>
+      <div id="event-log-list" class="event-log-list"></div>
     </div>
     <!-- 商店面板 -->
     <div id="shop-panel" class="shop-panel" style="display:none;"></div>
