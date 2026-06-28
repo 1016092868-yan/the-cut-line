@@ -100,14 +100,16 @@ const Player3D = {
       else Engine.switchToLane(targetLane);
     }
 
-    if (Input.jump && !this.isJumping && !this.isSliding) { this.isJumping = true; this.jumpTimer = 0.38; }
+    // 跳跃：使用 isDown 检测持续按住（更灵敏），配合跳跃冷却
+    if (Input.isDown('Space') && !this.isJumping && !this.isSliding) { this.isJumping = true; this.jumpTimer = 0.35; }
     if (this.isJumping) {
       this.jumpTimer -= dt;
-      this.bounceOffset = Math.sin(Math.max(0, this.jumpTimer) / 0.38 * Math.PI) * 2.8;
+      this.bounceOffset = Math.sin(Math.max(0, this.jumpTimer) / 0.35 * Math.PI) * 2.8;
       if (this.jumpTimer <= 0) { this.isJumping = false; this.bounceOffset = 0; }
     }
 
-    if (Input.slide && !this.isSliding && !this.isJumping) { this.isSliding = true; this.slideTimer = 0.4; }
+    // 下蹲：使用 isDown 检测持续按住
+    if (Input.isDown('ArrowDown') && !this.isSliding && !this.isJumping) { this.isSliding = true; this.slideTimer = 0.35; }
     if (this.isSliding) { this.slideTimer -= dt; if (this.slideTimer <= 0) this.isSliding = false; }
 
     const legSwing = Math.sin(this.runTime) * 0.6;

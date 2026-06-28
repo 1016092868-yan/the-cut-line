@@ -45,15 +45,15 @@ const Game3D = {
 
     // ===== 丰富的光照系统 =====
     // 半球光（天空+地面）
-    this.hemiLight = new THREE.HemisphereLight(0x87CEEB, 0x362907, 0.8);
+    this.hemiLight = new THREE.HemisphereLight(0xddeeff, 0x889966, 1.0);
     this.scene.add(this.hemiLight);
 
-    // 环境光
-    this.ambientLight = new THREE.AmbientLight(0x8899aa, 0.6);
+    // 环境光（提亮暗面）
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 1.0);
     this.scene.add(this.ambientLight);
 
     // 主方向光（太阳）
-    this.directionalLight = new THREE.DirectionalLight(0xffeedd, 1.8);
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 2.5);
     this.directionalLight.position.set(15, 25, 10);
     this.directionalLight.castShadow = true;
     this.directionalLight.shadow.mapSize.width = 2048;
@@ -68,9 +68,14 @@ const Game3D = {
     this.scene.add(this.directionalLight);
 
     // 后方补光（减少正面过暗）
-    const backLight = new THREE.DirectionalLight(0x8899cc, 0.5);
+    const backLight = new THREE.DirectionalLight(0xaaccff, 0.8);
     backLight.position.set(0, 3, 10);
     this.scene.add(backLight);
+
+    // 底部补光（减少下方过暗）
+    const bottomLight = new THREE.DirectionalLight(0x889966, 0.4);
+    bottomLight.position.set(0, -1, 5);
+    this.scene.add(bottomLight);
 
     // 对象容器
     this.worldGroup = new THREE.Group();
