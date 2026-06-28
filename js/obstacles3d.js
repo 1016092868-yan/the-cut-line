@@ -62,7 +62,7 @@ const Obstacles3D = {
         default: // box
           bodyGeo = new THREE.BoxGeometry(t.scale[0], t.scale[1], t.scale[2]);
       }
-      bodyMat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5, metalness: 0.1 });
+      bodyMat = new THREE.MeshToonMaterial({ map: tex, gradientMap: null });
       const body = new THREE.Mesh(bodyGeo, bodyMat);
       body.castShadow = true;
       body.receiveShadow = true;

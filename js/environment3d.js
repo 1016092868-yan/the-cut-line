@@ -24,7 +24,7 @@ const Environment3D = {
     const groundGeo = new THREE.PlaneGeometry(60, 200);
     const groundTex = Textures.asphalt();
     groundTex.repeat.set(3, 10);
-    const groundMat = new THREE.MeshStandardMaterial({ map: groundTex, roughness: 0.9, color: cfg.groundColor });
+    const groundMat = new THREE.MeshToonMaterial({ map: groundTex, roughness: 0.9, color: cfg.groundColor });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2; ground.position.set(0, -0.1, -60); ground.receiveShadow = true;
     group.add(ground);
@@ -47,11 +47,11 @@ const Environment3D = {
 
       const geo = new THREE.BoxGeometry(w, h, w);
       let mat;
-      if (style === 'brick') mat = new THREE.MeshStandardMaterial({ map: brickTex, roughness: 0.85 });
-      else if (style === 'glass') mat = new THREE.MeshStandardMaterial({ map: glassTex, roughness: 0.3, metalness: 0.5 });
+      if (style === 'brick') mat = new THREE.MeshToonMaterial({ map: brickTex, roughness: 0.85 });
+      else if (style === 'glass') mat = new THREE.MeshToonMaterial({ map: glassTex, roughness: 0.3, metalness: 0.5 });
       else if (style === 'neon') {
-        mat = new THREE.MeshStandardMaterial({ color: cfg.bldColors[Math.floor(Math.random() * cfg.bldColors.length)], roughness: 0.4, emissive: cfg.bldColors[0], emissiveIntensity: 0.3 });
-      } else mat = new THREE.MeshStandardMaterial({ map: windowTex, roughness: 0.7 });
+        mat = new THREE.MeshToonMaterial({ color: cfg.bldColors[Math.floor(Math.random() * cfg.bldColors.length)], roughness: 0.4, emissive: cfg.bldColors[0], emissiveIntensity: 0.3 });
+      } else mat = new THREE.MeshToonMaterial({ map: windowTex, roughness: 0.7 });
 
       const bld = new THREE.Mesh(geo, mat);
       bld.position.set(side * (10 + Math.random() * 5), h / 2, z);
@@ -65,12 +65,12 @@ const Environment3D = {
         const tz = z + Math.random() * 5;
         // 树干
         const trunkGeo = new THREE.CylinderGeometry(0.15, 0.2, 2, 6);
-        const trunk = new THREE.Mesh(trunkGeo, new THREE.MeshStandardMaterial({ color: 0x5D4037, roughness: 0.9 }));
+        const trunk = new THREE.Mesh(trunkGeo, new THREE.MeshToonMaterial({ color: 0x5D4037, roughness: 0.9 }));
         trunk.position.set(tx, 1, tz); trunk.castShadow = true;
         group.add(trunk);
         // 树冠
         const crownGeo = new THREE.ConeGeometry(1.2, 2.5, 8, 4);
-        const crown = new THREE.Mesh(crownGeo, new THREE.MeshStandardMaterial({ color: 0x388E3C, roughness: 0.8 }));
+        const crown = new THREE.Mesh(crownGeo, new THREE.MeshToonMaterial({ color: 0x388E3C, roughness: 0.8 }));
         crown.position.set(tx, 2.8, tz); crown.castShadow = true;
         group.add(crown);
         this.trees.push({ trunk, crown, z: tz });
@@ -82,11 +82,11 @@ const Environment3D = {
       const side = (Math.random() > 0.5 ? 1 : -1);
       const z = -i * 18;
       const poleGeo = new THREE.CylinderGeometry(0.08, 0.12, 5, 8);
-      const pole = new THREE.Mesh(poleGeo, new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.6 }));
+      const pole = new THREE.Mesh(poleGeo, new THREE.MeshToonMaterial({ color: 0x333333, roughness: 0.4, metalness: 0.6 }));
       pole.position.set(side * 8, 2.5, z); pole.castShadow = true;
       group.add(pole);
       const bulbGeo = new THREE.SphereGeometry(0.35, 8, 8);
-      const bulb = new THREE.Mesh(bulbGeo, new THREE.MeshStandardMaterial({ color: 0xffffcc, emissive: 0xffdd88, emissiveIntensity: 0.8, roughness: 0.2 }));
+      const bulb = new THREE.Mesh(bulbGeo, new THREE.MeshToonMaterial({ color: 0xffffcc, emissive: 0xffdd88, emissiveIntensity: 0.8, roughness: 0.2 }));
       bulb.position.set(side * 8, 5.2, z);
       group.add(bulb);
       this.lamps.push({ pole, bulb, side, z });

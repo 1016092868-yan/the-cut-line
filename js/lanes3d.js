@@ -24,7 +24,7 @@ const Lanes3D = {
 
       // 跑道主体（沥青纹理）
       const roadGeo = new THREE.PlaneGeometry(roadWidth, this.segmentLength);
-      const roadMat = new THREE.MeshStandardMaterial({ map: roadTex, roughness: 0.85, metalness: 0.05 });
+      const roadMat = new THREE.MeshToonMaterial({ map: roadTex, roughness: 0.85, metalness: 0.05 });
       const road = new THREE.Mesh(roadGeo, roadMat);
       road.rotation.x = -Math.PI / 2; road.position.set(0, -0.05, z); road.receiveShadow = true;
       group.add(road); seg.meshes.push(road);
@@ -33,7 +33,7 @@ const Lanes3D = {
       for (let l = 0; l < 3; l++) {
         const x = Game3D.lanePositions[l];
         const laneGeo = new THREE.PlaneGeometry(Game3D.laneWidth - 0.15, this.segmentLength);
-        const laneMat = new THREE.MeshStandardMaterial({ map: laneTexes[l], roughness: 0.7, metalness: 0.1, transparent: true, opacity: 0.5 });
+        const laneMat = new THREE.MeshToonMaterial({ map: laneTexes[l], roughness: 0.7, metalness: 0.1, transparent: true, opacity: 0.5 });
         const lane = new THREE.Mesh(laneGeo, laneMat);
         lane.rotation.x = -Math.PI / 2; lane.position.set(x, 0.01, z); lane.receiveShadow = true;
         group.add(lane); seg.meshes.push(lane);
@@ -43,7 +43,7 @@ const Lanes3D = {
       for (let d = 0; d < 2; d++) {
         const dx = (Game3D.lanePositions[d] + Game3D.lanePositions[d + 1]) / 2;
         const divGeo = new THREE.PlaneGeometry(0.2, this.segmentLength);
-        const divMat = new THREE.MeshStandardMaterial({ map: lineTex, roughness: 0.4, emissive: 0x444444, emissiveIntensity: 0.3, depthWrite: false });
+        const divMat = new THREE.MeshToonMaterial({ map: lineTex, roughness: 0.4, emissive: 0x444444, emissiveIntensity: 0.3, depthWrite: false });
         const div = new THREE.Mesh(divGeo, divMat);
         div.rotation.x = -Math.PI / 2; div.position.set(dx, 0.03, z);
         group.add(div); seg.meshes.push(div);
@@ -56,7 +56,7 @@ const Lanes3D = {
       for (let i = 0; i < this.totalSegments; i++) {
         const z = -i * this.segmentLength;
         const curbGeo = new THREE.BoxGeometry(0.3, 0.2, this.segmentLength);
-        const curbMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.5 });
+        const curbMat = new THREE.MeshToonMaterial({ color: 0xcccccc, roughness: 0.5 });
         const curb = new THREE.Mesh(curbGeo, curbMat);
         curb.position.set(side * (roadWidth / 2 + 0.15), 0.1, z);
         curb.receiveShadow = true; curb.castShadow = true;
