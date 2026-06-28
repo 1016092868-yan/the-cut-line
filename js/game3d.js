@@ -12,6 +12,7 @@ const Game3D = {
   laneWidth: 2.5,
   lanePositions: [-3.75, 0, 3.75],
   laneColors: [0x4CAF50, 0x2196F3, 0x9C27B0],
+  skyDome: null,
   _resizeBound: false,
 
   async init(containerId) {
@@ -121,7 +122,7 @@ const Game3D = {
     };
     const c = configs[worldId] || configs[1];
     this.scene.background = new THREE.Color(c.sky);
-    this.scene.fog = new THREE.Fog(c.sky, c.fogN, c.fogF);
+    this.scene.fog = new THREE.Fog(c.fog, c.fogN, c.fogF);
     if (this.hemiLight) {
       this.hemiLight.color.set(c.hemiSky);
       this.hemiLight.groundColor.set(c.hemiGnd);
@@ -132,6 +133,26 @@ const Game3D = {
     }
     if (this.ambientLight) this.ambientLight.intensity = c.ambInt;
     this.renderer.toneMappingExposure = worldId === 5 ? 0.8 : 1.0;
+
+    // ===== 天空球（使用世界场景图） =====
+    const worldAssetPath = 'assets/worlds/' + getWorldAssetPath(worldId);
+    const texLoader = new THREE.TextureLoader();
+    texLoader.load(worldAssetPath, (worldTex) => {
+      worldTex.colorSpace = THREE.SRGBColorSpace;
+      worldTex.minFilter = THREE.LinearFilter;
+      worldTex.magFilter = THREE.LinearFilter;
+
+      if (this.skyDome) {
+        this.skyDome.material.map = worldTex;
+        this.skyDome.material.needsUpdate = true;
+      } else {
+        const skyGeo = new THREE.SphereGeometry(90, 32, 32);
+        const skyMat = new THREE.MeshBasicMaterial({ map: worldTex, side: THREE.BackSide, depthWrite: false });
+        this.skyDome = new THREE.Mesh(skyGeo, skyMat);
+        this.skyDome.renderOrder = -1;
+        this.scene.add(this.skyDome);
+      }
+    });
   },
 
   getLaneX(laneIndex) { return this.lanePositions[laneIndex] || 0; },

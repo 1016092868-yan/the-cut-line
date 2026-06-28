@@ -83,6 +83,9 @@ const Engine = {
     const frameTime = Math.min(timestamp - lastTime, 100);
     lastTime = timestamp;
 
+    // 先更新输入（确保按键状态在 fixedUpdate 之前就绪）
+    Input.update();
+
     if (!GameState.isPaused) {
       accumulator += frameTime;
       while (accumulator >= FIXED_STEP) {
@@ -92,7 +95,6 @@ const Engine = {
       Engine.render3D();
     }
 
-    Input.update();
     gameLoopId = requestAnimationFrame((t) => Engine.loop(t));
   },
 
@@ -173,6 +175,11 @@ const Engine = {
     const targetFov = staminaPct < 0.15 ? 82 : staminaPct < 0.35 ? 76 : baseFov;
     cam.fov += (targetFov - cam.fov) * 0.06;
 
+    // 天空球跟随相机
+    if (Game3D.skyDome) {
+      Game3D.skyDome.position.set(cam.position.x, 0, cam.position.z);
+    }
+
     Game3D.render();
     HUD.update();
   },
@@ -234,9 +241,10 @@ const Engine = {
 
     gd.currentLane = directLane;
     gd.laneSwitches++;
-    gd.switchCooldown = 1000;
-    gd.stamina = Math.max(0, gd.stamina - 5);
-    gd.cycleIncome *= 0.7;
+    gd.switchCooldown = 50;
+    gd.stamina = Math.max(0, gd.stamina - 3);
+    gd.cycleIncome *= 0.85;
     Player3D.startLaneSwitch(directLane);
+    AudioFX.laneSwitch();
   }
 };

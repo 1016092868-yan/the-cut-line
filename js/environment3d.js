@@ -10,13 +10,13 @@ const Environment3D = {
     while (group.children.length > 0) group.remove(group.children[0]);
     this.buildings = []; this.trees = []; this.lamps = [];
 
-    // 世界配置
+    // 世界配置（P4 升级：更丰富的差异化）
     const configs = {
-      1: { groundColor: 0x5a8f4a, buildingStyles: ['brick', 'brick', 'window'], windowColor: '#ffffcc', bldColors: [0x8D6E63, 0xA1887F, 0xBCAAA4, 0xD7CCC8], treeDensity: 0.4 },
-      2: { groundColor: 0x546e7a, buildingStyles: ['glass', 'glass', 'window'], windowColor: '#bbdefb', bldColors: [0x37474F, 0x455A64, 0x546E7A, 0x607D8B], treeDensity: 0.1 },
-      3: { groundColor: 0x8d6e63, buildingStyles: ['brick', 'window', 'window'], windowColor: '#ffe082', bldColors: [0xFFAB91, 0xFFCC80, 0xFFE082, 0xFFF176], treeDensity: 0.3 },
-      4: { groundColor: 0x311B92, buildingStyles: ['glass', 'glass', 'neon'], windowColor: '#e1bee7', bldColors: [0x4A148C, 0x6A1B9A, 0x7B1FA2, 0x9C27B0], treeDensity: 0 },
-      5: { groundColor: 0x3E0000, buildingStyles: ['ruin', 'ruin', 'neon'], windowColor: '#ff0000', bldColors: [0xB71C1C, 0xC62828, 0xD32F2F, 0xE53935], treeDensity: 0 }
+      1: { groundColor: 0x5a8f4a, buildingStyles: ['brick', 'brick', 'window'], windowColor: '#ffffcc', bldColors: [0x8D6E63, 0xA1887F, 0xBCAAA4, 0xD7CCC8], treeDensity: 0.5, grassColor: 0x66BB6A, sidewalkColor: 0xBDBDBD },
+      2: { groundColor: 0x546e7a, buildingStyles: ['glass', 'glass', 'window'], windowColor: '#bbdefb', bldColors: [0x37474F, 0x455A64, 0x546E7A, 0x607D8B], treeDensity: 0.15, grassColor: 0x78909C, sidewalkColor: 0x90A4AE },
+      3: { groundColor: 0x8d6e63, buildingStyles: ['brick', 'window', 'window'], windowColor: '#ffe082', bldColors: [0xFFAB91, 0xFFCC80, 0xFFE082, 0xFFF176], treeDensity: 0.4, grassColor: 0xA5D6A7, sidewalkColor: 0xBCAAA4 },
+      4: { groundColor: 0x311B92, buildingStyles: ['glass', 'glass', 'neon'], windowColor: '#e1bee7', bldColors: [0x4A148C, 0x6A1B9A, 0x7B1FA2, 0x9C27B0], treeDensity: 0, grassColor: 0x4527A0, sidewalkColor: 0x5E35B1 },
+      5: { groundColor: 0x3E0000, buildingStyles: ['ruin', 'ruin', 'neon'], windowColor: '#ff0000', bldColors: [0xB71C1C, 0xC62828, 0xD32F2F, 0xE53935], treeDensity: 0, grassColor: 0x4A0000, sidewalkColor: 0x620000 }
     };
     const cfg = configs[worldId] || configs[1];
 
