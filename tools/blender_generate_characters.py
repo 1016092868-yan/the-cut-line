@@ -1,39 +1,22 @@
 """
-Blender 一键角色生成器 — The Cut Line
+Blender 角色生成器 v2 — The Cut Line
 =====================================
-用法：
-  1. 打开 Blender 4.0+
-  2. Scripting 工作区 → 粘贴此脚本 → Run Script
-  3. 自动生成 6 个角色模型到 /tmp/cutline-models/
-  4. 将 .glb 文件复制到项目的 assets/models/ 目录
+使用 Skin Modifier 生成有肌肉曲线的真人比例人体，
+而非简单几何体拼接。
 
-生成内容：
-  - 低多边形人体（头+身体+四肢）
-  - 衣服（上衣+裤子+鞋）
-  - 头发
-  - 6 套不同配色
-  - 每个模型约 1200-1800 三角面
-  - 导出为 .glb 格式
-
-手动微调建议：
-  - 选择角色 → Tab 进入编辑模式 → 调整体型
-  - 修改材质颜色 → Shading 工作区 → 调 Principled BSDF
-  - 添加配饰 → 在 Object 模式添加几何体
+用法：Blender 4.0+ Scripting 工作区 → Run Script
+输出：/tmp/cutline-models/char-01.glb ~ char-06.glb
 """
 
 import bpy
 import os
 import math
 
-# ============================================================
-# 配置
-# ============================================================
 OUTPUT_DIR = "/tmp/cutline-models"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# 6 套配色方案
-COLOR_SCHEMES = [
-    # (皮肤, 头发, 上衣, 裤子, 鞋子, 角色名)
+# 6套配色
+SCHEMES = [
     (0xFFCC80, 0x3E2723, 0x4488CC, 0x37474F, 0x2C2C2C, "char-01-average-joe"),
     (0xF5D0A9, 0x1A1A1A, 0x2E7D32, 0x263238, 0x3E2723, "char-02-summa-cum-laude"),
     (0xE0AC69, 0x4E342E, 0xC62828, 0x1B2631, 0x424242, "char-03-college-athlete"),
@@ -43,209 +26,218 @@ COLOR_SCHEMES = [
 ]
 
 
-def hex_to_rgb(hex_val):
-    """将 0xRRGGBB 转为 (R, G, B) 0-1 范围"""
-    return (
-        ((hex_val >> 16) & 0xFF) / 255.0,
-        ((hex_val >> 8) & 0xFF) / 255.0,
-        (hex_val & 0xFF) / 255.0,
-    )
+def hex2rgb(h):
+    return ((h >> 16 & 0xFF) / 255, (h >> 8 & 0xFF) / 255, (h & 0xFF) / 255)
 
 
-def create_material(name, hex_color, roughness=0.5):
-    """创建 Principled BSDF 材质"""
-    mat = bpy.data.materials.new(name=name)
+def mkmat(name, hex_color, rough=0.5):
+    mat = bpy.data.materials.new(name)
     mat.use_nodes = True
     bsdf = mat.node_tree.nodes["Principled BSDF"]
-    bsdf.inputs["Base Color"].default_value = (*hex_to_rgb(hex_color), 1.0)
-    bsdf.inputs["Roughness"].default_value = roughness
+    bsdf.inputs["Base Color"].default_value = (*hex2rgb(hex_color), 1.0)
+    bsdf.inputs["Roughness"].default_value = rough
     return mat
 
 
-def clear_scene():
-    """清空场景"""
+def clear_all():
     bpy.ops.object.select_all(action='SELECT')
     bpy.ops.object.delete()
-    for mat in bpy.data.materials:
-        bpy.data.materials.remove(mat)
+    for m in bpy.data.materials:
+        bpy.data.materials.remove(m)
+    for mesh in bpy.data.meshes:
+        bpy.data.meshes.remove(mesh)
 
 
-def add_subsurf(obj, levels=1):
-    """添加 Subdivision Surface 修改器"""
-    mod = obj.modifiers.new(name="Subsurf", type='SUBSURF')
-    mod.levels = levels
-    mod.render_levels = levels
-    bpy.ops.object.modifier_apply(modifier=mod.name)
-
-
-def build_character(scheme, char_index):
+def build_body(scheme):
     """
-    构建一个低多边形角色
-    结构：
-      - 身体 (Cylinder → 编辑成人体)
-      - 头部 (UV Sphere)
-      - 头发 (UV Sphere 上半 + 缩放)
-      - 手臂 ×2 (Cylinder)
-      - 腿 ×2 (Cylinder)
-      - 脚 ×2 (Cube)
+    用单顶点链 + Skin Modifier 构建人体。
+    原理：每个顶点代表一个关节位置，Skin Modifier
+    自动在顶点周围生成可变半径的蒙皮网格。
     """
-    skin, hair_c, top_c, bottom_c, shoe_c, char_name = scheme
+    skin, hair_c, top_c, bottom_c, shoe_c, name = scheme
 
-    # --- 材质 ---
-    skin_mat = create_material(f"skin_{char_index}", skin, 0.4)
-    hair_mat = create_material(f"hair_{char_index}", hair_c, 0.6)
-    top_mat = create_material(f"top_{char_index}", top_c, 0.5)
-    bottom_mat = create_material(f"bottom_{char_index}", bottom_c, 0.5)
-    shoe_mat = create_material(f"shoe_{char_index}", shoe_c, 0.4)
+    # === 材质 ===
+    skin_mat = mkmat("skin", skin, 0.35)
+    hair_mat = mkmat("hair", hair_c, 0.55)
+    top_mat = mkmat("top", top_c, 0.45)
+    bottom_mat = mkmat("bottom", bottom_c, 0.5)
+    shoe_mat = mkmat("shoe", shoe_c, 0.4)
 
-    # --- 身体 ---
-    bpy.ops.mesh.primitive_cylinder_add(
-        vertices=12, radius=0.28, depth=1.0,
-        location=(0, 0, 1.25)
-    )
-    body = bpy.context.active_object
-    body.name = "Body"
-    body.data.materials.append(top_mat)
+    # === 身体：顶点链（从脚底到头顶） ===
+    # 每个顶点的 Y 坐标和对应的蒙皮半径
+    body_verts = [
+        (0, 0, 0),       # 0: 脚底
+        (0, 0, 0.05),    # 1: 脚踝
+        (0, 0, 0.45),    # 2: 膝盖
+        (0, 0, 0.85),    # 3: 髋部
+        (0, 0, 1.15),    # 4: 腰部
+        (0, 0, 1.40),    # 5: 胸部
+        (0, 0, 1.60),    # 6: 肩膀
+        (0, 0, 1.80),    # 7: 颈部
+        (0, 0, 2.05),    # 8: 头顶
+    ]
 
-    # --- 头部 ---
+    # 每个顶点对应的蒙皮半径（X 和 Y 方向分别控制宽度和厚度）
+    body_radii = [
+        (0.10, 0.22),  # 脚
+        (0.08, 0.18),  # 脚踝
+        (0.09, 0.18),  # 膝盖
+        (0.13, 0.18),  # 髋部
+        (0.12, 0.16),  # 腰部
+        (0.14, 0.16),  # 胸部
+        (0.15, 0.14),  # 肩膀
+        (0.07, 0.10),  # 颈部
+        (0.10, 0.12),  # 头顶
+    ]
+
+    # 创建身体网格
+    body_mesh = bpy.data.meshes.new("BodyMesh")
+    body_obj = bpy.data.objects.new("Body", body_mesh)
+    bpy.context.collection.objects.link(body_obj)
+
+    body_mesh.from_pydata(body_verts, [], [[i, i+1] for i in range(len(body_verts)-1)])
+    body_mesh.update()
+
+    # 添加 Skin Modifier
+    bpy.context.view_layer.objects.active = body_obj
+    bpy.ops.object.mode_set(mode='EDIT')
+    bpy.ops.mesh.select_all(action='SELECT')
+
+    # 设置每个顶点的蒙皮半径
+    bm = bmesh.from_edit_mesh(body_mesh)
+    for i, v in enumerate(bm.verts):
+        v.select = True
+    bm.select_flush(True)
+    bpy.ops.object.mode_set(mode='OBJECT')
+
+    skin_mod = body_obj.modifiers.new("Skin", 'SKIN')
+    # 为每个顶点设置独立半径
+    for i, v in enumerate(body_obj.data.skin_vertices[0].data):
+        rx, ry = body_radii[i] if i < len(body_radii) else (0.1, 0.15)
+        v.radius = (rx, ry)
+
+    # Subdivision Surface 平滑
+    subd = body_obj.modifiers.new("Subdiv", 'SUBSURF')
+    subd.levels = 2
+    subd.render_levels = 2
+
+    # 应用修改器
+    bpy.ops.object.modifier_apply(modifier="Skin")
+    bpy.ops.object.modifier_apply(modifier="Subdiv")
+
+    body_obj.data.materials.append(top_mat)
+
+    # === 头部 ===
     bpy.ops.mesh.primitive_uv_sphere_add(
-        segments=14, ring_count=12, radius=0.26,
+        segments=16, ring_count=14, radius=0.22,
         location=(0, 0, 2.05)
     )
     head = bpy.context.active_object
     head.name = "Head"
+    # 稍微拉长头部
+    head.scale = (1.0, 0.92, 0.95)
+    bpy.ops.object.transform_apply(scale=True)
     head.data.materials.append(skin_mat)
 
-    # --- 头发 ---
+    # === 头发 ===
     bpy.ops.mesh.primitive_uv_sphere_add(
-        segments=12, ring_count=8, radius=0.28,
+        segments=14, ring_count=10, radius=0.24,
         location=(0, 0, 2.15)
     )
     hair = bpy.context.active_object
     hair.name = "Hair"
-    hair.scale = (1.0, 0.4, 1.0)
+    hair.scale = (1.05, 0.35, 1.05)
+    bpy.ops.object.transform_apply(scale=True)
     hair.data.materials.append(hair_mat)
 
-    # --- 左臂 ---
-    bpy.ops.mesh.primitive_cylinder_add(
-        vertices=8, radius=0.07, depth=0.6,
-        location=(-0.38, 0, 1.55)
-    )
-    left_arm = bpy.context.active_object
-    left_arm.name = "LeftArm"
-    left_arm.data.materials.append(top_mat)
+    # === 手臂：顶点链 ===
+    for side, sx in [("Left", -1), ("Right", 1)]:
+        arm_verts = [
+            (sx * 0.30, 0, 1.60),   # 肩
+            (sx * 0.45, 0, 1.42),   # 肘
+            (sx * 0.55, 0, 1.15),   # 腕
+            (sx * 0.55, 0, 1.05),   # 手
+        ]
+        arm_mesh = bpy.data.meshes.new(f"{side}ArmMesh")
+        arm_obj = bpy.data.objects.new(f"{side}Arm", arm_mesh)
+        bpy.context.collection.objects.link(arm_obj)
+        arm_mesh.from_pydata(arm_verts, [], [[0,1],[1,2],[2,3]])
+        arm_mesh.update()
+        bpy.context.view_layer.objects.active = arm_obj
 
-    # --- 右臂 ---
-    bpy.ops.mesh.primitive_cylinder_add(
-        vertices=8, radius=0.07, depth=0.6,
-        location=(0.38, 0, 1.55)
-    )
-    right_arm = bpy.context.active_object
-    right_arm.name = "RightArm"
-    right_arm.data.materials.append(top_mat)
+        arm_skin = arm_obj.modifiers.new("Skin", 'SKIN')
+        radii = [(0.06,0.06), (0.05,0.05), (0.04,0.04), (0.04,0.04)]
+        for i, v in enumerate(arm_obj.data.skin_vertices[0].data):
+            rx, ry = radii[i] if i < len(radii) else (0.04, 0.04)
+            v.radius = (rx, ry)
+        arm_subd = arm_obj.modifiers.new("Subdiv", 'SUBSURF')
+        arm_subd.levels = 2
+        bpy.ops.object.modifier_apply(modifier="Skin")
+        bpy.ops.object.modifier_apply(modifier="Subdiv")
+        arm_obj.data.materials.append(top_mat)
 
-    # --- 左手 ---
-    bpy.ops.mesh.primitive_uv_sphere_add(
-        segments=8, ring_count=6, radius=0.07,
-        location=(-0.38, 0, 1.18)
-    )
-    left_hand = bpy.context.active_object
-    left_hand.name = "LeftHand"
-    left_hand.data.materials.append(skin_mat)
+    # === 腿：顶点链 ===
+    for side, sx in [("Left", -1), ("Right", 1)]:
+        leg_verts = [
+            (sx * 0.10, 0, 0.85),   # 髋
+            (sx * 0.10, 0, 0.45),   # 膝
+            (sx * 0.10, 0, 0.08),   # 踝
+            (sx * 0.10, 0.06, 0),   # 脚底
+        ]
+        leg_mesh = bpy.data.meshes.new(f"{side}LegMesh")
+        leg_obj = bpy.data.objects.new(f"{side}Leg", leg_mesh)
+        bpy.context.collection.objects.link(leg_obj)
+        leg_mesh.from_pydata(leg_verts, [], [[0,1],[1,2],[2,3]])
+        leg_mesh.update()
+        bpy.context.view_layer.objects.active = leg_obj
 
-    # --- 右手 ---
-    bpy.ops.mesh.primitive_uv_sphere_add(
-        segments=8, ring_count=6, radius=0.07,
-        location=(0.38, 0, 1.18)
-    )
-    right_hand = bpy.context.active_object
-    right_hand.name = "RightHand"
-    right_hand.data.materials.append(skin_mat)
+        leg_skin = leg_obj.modifiers.new("Skin", 'SKIN')
+        lradii = [(0.09,0.10), (0.08,0.09), (0.06,0.10), (0.06,0.18)]
+        for i, v in enumerate(leg_obj.data.skin_vertices[0].data):
+            rx, ry = lradii[i] if i < len(lradii) else (0.06, 0.10)
+            v.radius = (rx, ry)
+        leg_subd = leg_obj.modifiers.new("Subdiv", 'SUBSURF')
+        leg_subd.levels = 2
+        bpy.ops.object.modifier_apply(modifier="Skin")
+        bpy.ops.object.modifier_apply(modifier="Subdiv")
+        leg_obj.data.materials.append(bottom_mat)
 
-    # --- 左腿 ---
-    bpy.ops.mesh.primitive_cylinder_add(
-        vertices=8, radius=0.09, depth=0.7,
-        location=(-0.12, 0, 0.48)
-    )
-    left_leg = bpy.context.active_object
-    left_leg.name = "LeftLeg"
-    left_leg.data.materials.append(bottom_mat)
-
-    # --- 右腿 ---
-    bpy.ops.mesh.primitive_cylinder_add(
-        vertices=8, radius=0.09, depth=0.7,
-        location=(0.12, 0, 0.48)
-    )
-    right_leg = bpy.context.active_object
-    right_leg.name = "RightLeg"
-    right_leg.data.materials.append(bottom_mat)
-
-    # --- 左脚 ---
-    bpy.ops.mesh.primitive_cube_add(
-        size=1, location=(-0.12, 0.06, 0.12)
-    )
-    left_foot = bpy.context.active_object
-    left_foot.name = "LeftFoot"
-    left_foot.scale = (0.16, 0.06, 0.22)
-    left_foot.data.materials.append(shoe_mat)
-
-    # --- 右脚 ---
-    bpy.ops.mesh.primitive_cube_add(
-        size=1, location=(0.12, 0.06, 0.12)
-    )
-    right_foot = bpy.context.active_object
-    right_foot.name = "RightFoot"
-    right_foot.scale = (0.16, 0.06, 0.22)
-    right_foot.data.materials.append(shoe_mat)
-
-    # --- 合并所有部件 ---
+    # === 合并所有部件 ===
     bpy.ops.object.select_all(action='SELECT')
-    bpy.context.view_layer.objects.active = body
+    bpy.context.view_layer.objects.active = body_obj
     bpy.ops.object.join()
 
-    # --- 设置原点到底部 ---
+    # === 原点到底部 ===
     bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
-    # 手动偏移使原点在脚底
-    bpy.context.object.location.z -= bpy.context.object.dimensions.z / 2
+    body_obj.location.z -= body_obj.dimensions.z / 2
 
-    # --- 重命名 ---
-    body.name = char_name
-    body.location = (0, 0, 0)
-
-    # --- 导出 GLB ---
-    output_path = os.path.join(OUTPUT_DIR, f"{char_name}.glb")
+    # === 导出 ===
+    path = os.path.join(OUTPUT_DIR, f"{name}.glb")
     bpy.ops.object.select_all(action='DESELECT')
-    body.select_set(True)
+    body_obj.select_set(True)
     bpy.ops.export_scene.gltf(
-        filepath=output_path,
-        export_format='GLB',
-        use_selection=True,
-        export_apply=True,
+        filepath=path, export_format='GLB',
+        use_selection=True, export_apply=True,
         export_image_format='NONE',
     )
-    print(f"  ✅ 导出: {output_path}")
-
-    return body
+    print(f"  ✅ {name}.glb ({int(len(body_obj.data.polygons))} 面)")
+    return body_obj
 
 
 # ============================================================
-# 主流程
-# ============================================================
-print("=" * 60)
-print("🎮 The Cut Line — Blender 角色生成器")
-print("=" * 60)
+print("=" * 55)
+print("🎮 The Cut Line — 角色生成器 v2 (Skin Modifier)")
+print("=" * 55)
 
-for i, scheme in enumerate(COLOR_SCHEMES):
-    char_name = scheme[5]
-    print(f"\n[{i+1}/6] 生成 {char_name} ...")
-    clear_scene()
-    build_character(scheme, i + 1)
+# 需要 bmesh 来设置蒙皮半径
+import bmesh
 
-print(f"\n{'=' * 60}")
-print(f"✅ 全部完成！6 个模型已导出到:")
-print(f"   {OUTPUT_DIR}/")
-print(f"\n📋 下一步:")
-print(f"   1. 复制 .glb 文件到项目的 assets/models/ 目录")
-print(f"   2. 在 Blender 中打开单个模型微调（可选）")
-print(f"   3. 刷新浏览器查看效果")
-print(f"{'=' * 60}")
+for i, scheme in enumerate(SCHEMES):
+    name = scheme[5]
+    print(f"\n[{i+1}/6] {name}")
+    clear_all()
+    build_body(scheme)
+
+print(f"\n{'=' * 55}")
+print(f"✅ 完成！导出到 {OUTPUT_DIR}/")
+print(f"{'=' * 55}")
