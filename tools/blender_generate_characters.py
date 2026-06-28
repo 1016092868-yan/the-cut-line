@@ -203,8 +203,10 @@ def build_character(scheme, char_index):
     bpy.context.view_layer.objects.active = body
     bpy.ops.object.join()
 
-    # --- 设置原点 ---
-    bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOTTOM')
+    # --- 设置原点到底部 ---
+    bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
+    # 手动偏移使原点在脚底
+    bpy.context.object.location.z -= bpy.context.object.dimensions.z / 2
 
     # --- 重命名 ---
     body.name = char_name
