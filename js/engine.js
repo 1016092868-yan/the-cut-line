@@ -32,7 +32,7 @@ const Engine = {
     // 初始化子系统
     Lanes3D.init(level.length);
     Environment3D.init(worldId);
-    Player3D.init();
+    Player3D.init(); // 异步加载GLB，内部自动回退程序化模型
     Obstacles3D.init(level, world.params);
     Collectibles3D.init(level, world.params);
     Cutline3D.init(level.length);

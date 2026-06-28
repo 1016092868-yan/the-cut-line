@@ -1,6 +1,6 @@
 // ============================================================
-// player3d.js — 3D角色（神庙逃亡风格：精致低多边形 + 卡通渲染）
-// 画风：PvZ 漫画厚涂 × 神庙逃亡质感
+// player3d.js — 3D角色（GLB模型优先 + 程序化回退）
+// 优先加载 assets/models/char-XX.glb，失败则用程序化模型
 // ============================================================
 
 const Player3D = {
@@ -10,8 +10,9 @@ const Player3D = {
   isJumping: false, isSliding: false,
   jumpTimer: 0, slideTimer: 0, bounceOffset: 0, runTime: 0,
   glowRing: null,
+  isGLB: false,
 
-  init() {
+  async init() {
     const group = Game3D.playerGroup;
     while (group.children.length > 0) {
       const child = group.children[0];
@@ -22,7 +23,6 @@ const Player3D = {
       if (child.geometry) child.geometry.dispose();
       group.remove(child);
     }
-    this.model = new THREE.Group();
     this.worldZ = 0;
     this.currentLaneX = Game3D.getLaneX(1);
     this.targetLaneX = this.currentLaneX;
@@ -30,7 +30,35 @@ const Player3D = {
     this.jumpTimer = this.slideTimer = this.bounceOffset = this.runTime = 0;
 
     const char = GameState.selectedCharacter;
-    const ci = (char.id - 1) % 6;
+
+    // 尝试加载 GLB 模型
+    const glbPath = ModelLoader.getCharacterPath(char.id);
+    const glbModel = await ModelLoader.load('char-' + char.id, glbPath);
+
+    if (glbModel) {
+      // ✅ 使用 GLB 模型
+      this.isGLB = true;
+      this.model = glbModel;
+      this.model.scale.set(1.2, 1.2, 1.2);
+      this.model.position.set(this.currentLaneX, 0, this.worldZ);
+      this.model.traverse(child => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      group.add(this.model);
+      console.log('[Player3D] 使用GLB模型: char-' + char.id);
+    } else {
+      // ❌ 回退到程序化模型
+      this.isGLB = false;
+      this._buildProcedural(group, char);
+      console.log('[Player3D] 回退到程序化模型: char-' + char.id);
+    }
+  },
+
+  _buildProcedural(group, char) {
+    // ===== 原有程序化建模代码（保持不变）=====
 
     // 配色方案 — 鲜明对比，每个角色不同
     const schemes = [
