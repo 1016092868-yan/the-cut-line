@@ -13,8 +13,9 @@ const Player3D = {
   isGLB: false,
 
   async init() {
-    try {
     const group = Game3D.playerGroup;
+    const char = GameState.selectedCharacter;
+    try {
     while (group.children.length > 0) {
       const child = group.children[0];
       if (child.material) {
@@ -29,8 +30,6 @@ const Player3D = {
     this.targetLaneX = this.currentLaneX;
     this.isJumping = this.isSliding = false;
     this.jumpTimer = this.slideTimer = this.bounceOffset = this.runTime = 0;
-
-    const char = GameState.selectedCharacter;
 
     // 尝试加载 GLB 模型
     const glbPath = ModelLoader.getCharacterPath(char.id);
@@ -58,7 +57,6 @@ const Player3D = {
     }
     } catch(e) {
       console.error('[Player3D] init 失败:', e.message, e.stack);
-      this.model = new THREE.Group();
       this._buildProcedural(group, char);
     }
   },
