@@ -59,6 +59,15 @@ const Player3D = {
   },
 
   _buildTextured(group, char) {
+    try {
+      this._buildTexturedInner(group, char);
+    } catch(e) {
+      console.error('[Player3D] 纹理构建失败，回退到简单模型:', e.message);
+      this._buildSimple(group, char);
+    }
+  },
+
+  _buildTexturedInner(group, char) {
     this.model = new THREE.Group();
 
     // 获取角色纹理

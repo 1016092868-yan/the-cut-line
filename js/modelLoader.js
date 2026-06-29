@@ -11,30 +11,56 @@ const ModelLoader = {
     this.loader = new THREE.GLTFLoader();
   },
 
-  /** 加载单个模型（带缓存） */
+  /** 加载单个模型（带缓存 + 超时回退） */
   async load(key, path) {
     if (this.cache[key]) return this.cache[key].clone();
     if (!this.loader) this.init();
 
-    return new Promise((resolve, reject) => {
-      this.loader.load(
-        path,
-        (gltf) => {
-          this.cache[key] = gltf.scene;
-          resolve(gltf.scene.clone());
-        },
-        (progress) => {
-          // 加载进度（可选）
-          if (progress.total > 0) {
-            const pct = Math.round(progress.loaded / progress.total * 100);
-            if (pct % 25 === 0) console.log(`[ModelLoader] ${key}: ${pct}%`);
-          }
-        },
-        (err) => {
-          console.warn(`[ModelLoader] 加载失败: ${key} (${path})`, err.message);
-          resolve(null); // 返回 null 让调用方回退到程序化模型
+    return new Promise((resolve) => {
+      let settled = false;
+
+      // 超时保护：3秒后自动回退到程序化模型
+      const timeout = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          console.warn(`[ModelLoader] 超时: ${key} — 回退到程序化模型`);
+          resolve(null);
         }
-      );
+      }, 3000);
+
+      try {
+        this.loader.load(
+          path,
+          (gltf) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+            this.cache[key] = gltf.scene;
+            resolve(gltf.scene.clone());
+          },
+          (progress) => {
+            // 加载进度
+            if (progress.total > 0) {
+              const pct = Math.round(progress.loaded / progress.total * 100);
+              if (pct % 25 === 0) console.log(`[ModelLoader] ${key}: ${pct}%`);
+            }
+          },
+          (err) => {
+            if (settled) return;
+            settled = true;
+            clearTimeout(timeout);
+            console.warn(`[ModelLoader] 加载失败: ${key}`, err?.message || err);
+            resolve(null);
+          }
+        );
+      } catch (e) {
+        if (!settled) {
+          settled = true;
+          clearTimeout(timeout);
+          console.warn(`[ModelLoader] 异常: ${key}`, e.message);
+          resolve(null);
+        }
+      }
     });
   },
 
