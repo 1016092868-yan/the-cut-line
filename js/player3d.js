@@ -13,6 +13,7 @@ const Player3D = {
   isGLB: false,
 
   async init() {
+    try {
     const group = Game3D.playerGroup;
     while (group.children.length > 0) {
       const child = group.children[0];
@@ -54,6 +55,11 @@ const Player3D = {
       this.isGLB = false;
       this._buildProcedural(group, char);
       console.log('[Player3D] 回退到程序化模型: char-' + char.id);
+    }
+    } catch(e) {
+      console.error('[Player3D] init 失败:', e.message, e.stack);
+      this.model = new THREE.Group();
+      this._buildProcedural(group, char);
     }
   },
 

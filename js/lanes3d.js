@@ -6,6 +6,7 @@ const Lanes3D = {
   segments: [], segmentLength: 20, totalSegments: 8, scrollAccum: 0, totalDistance: 12000,
 
   init(totalDist) {
+    try {
     this.totalDistance = totalDist; this.segments = []; this.scrollAccum = 0;
     const group = Game3D.laneGroup;
     while (group.children.length > 0) group.remove(group.children[0]);
@@ -64,6 +65,9 @@ const Lanes3D = {
         // 添加到第一个segment以便滚动
         if (i === 0 && this.segments[0]) this.segments[0].meshes.push(curb);
       }
+    }
+    } catch(e) {
+      console.error('[Lanes3D] init 失败:', e.message);
     }
   },
 

@@ -6,6 +6,7 @@ const Obstacles3D = {
   pool: [], activeList: [], textures: {}, spawnTimer: 0, spawnInterval: 1.5,
 
   init(level, worldParams) {
+    try {
     this.pool = [];
     this.activeList = [];
     this.spawnTimer = 0;
@@ -135,6 +136,9 @@ const Obstacles3D = {
         damage: t.damage, yOff: t.scale[1] / 2, shape: t.shape, color: t.color,
         dodgeType: t.dodgeType || 'jump'
       });
+    }
+    } catch(e) {
+      console.error('[Obstacles3D] init 失败:', e.message);
     }
   },
 

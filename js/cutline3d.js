@@ -8,6 +8,7 @@ const Cutline3D = {
   totalDistance: 12000, pulsePhase: 0,
 
   init(totalDist) {
+    try {
     this.totalDistance = totalDist;
     const group = Game3D.cutlineGroup;
     while (group.children.length > 0) group.remove(group.children[0]);
@@ -63,6 +64,9 @@ const Cutline3D = {
     this.groundProj.rotation.x = -Math.PI / 2;
     this.groundProj.position.set(0, 0.05, -40);
     group.add(this.groundProj);
+    } catch(e) {
+      console.error('[Cutline3D] init 失败:', e.message);
+    }
   },
 
   update(dt) {

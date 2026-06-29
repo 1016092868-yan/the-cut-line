@@ -8,6 +8,7 @@ const Collectibles3D = {
   itemTextures: {},
 
   init(level, worldParams) {
+    try {
     this.density = worldParams.collectibleDensity;
     const group = Game3D.collectibleGroup;
     while (group.children.length > 0) group.remove(group.children[0]);
@@ -122,6 +123,9 @@ const Collectibles3D = {
         active: false, type: td.name, effect: td.effect,
         picked: false, lane: 0, color: td.color, value: td.value
       });
+    }
+    } catch(e) {
+      console.error('[Collectibles3D] init 失败:', e.message);
     }
   },
 
