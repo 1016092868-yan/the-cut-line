@@ -135,25 +135,43 @@ const Game3D = {
     if (this.ambientLight) this.ambientLight.intensity = c.ambInt;
     this.renderer.toneMappingExposure = worldId === 5 ? 0.8 : 1.0;
 
-    // ===== 天空球（使用世界场景图） =====
-    const worldAssetPath = 'assets/worlds/' + getWorldAssetPath(worldId);
-    const texLoader = new THREE.TextureLoader();
-    texLoader.load(worldAssetPath, (worldTex) => {
-      worldTex.colorSpace = THREE.SRGBColorSpace;
-      worldTex.minFilter = THREE.LinearFilter;
-      worldTex.magFilter = THREE.LinearFilter;
+    // ===== 天空球（Canvas程序化生成，零外部依赖，无CORS问题）=====
+    // 用 Canvas 绘制世界主题色渐变 + 云层
+    const skyCanvas = document.createElement('canvas');
+    skyCanvas.width = 512; skyCanvas.height = 512;
+    const skCtx = skyCanvas.getContext('2d');
+    // 天空渐变（从世界主题色到地平线色）
+    const skyGrad = skCtx.createLinearGradient(0, 0, 0, 512);
+    skyGrad.addColorStop(0, '#' + c.sky.toString(16).padStart(6, '0'));
+    skyGrad.addColorStop(0.6, '#' + c.fog.toString(16).padStart(6, '0'));
+    skyGrad.addColorStop(1, '#' + c.hemiGnd.toString(16).padStart(6, '0'));
+    skCtx.fillStyle = skyGrad;
+    skCtx.fillRect(0, 0, 512, 512);
+    // 简单云层
+    for (let ci = 0; ci < 15; ci++) {
+      const cx = Math.random() * 512;
+      const cy = Math.random() * 250;
+      skCtx.fillStyle = 'rgba(255,255,255,' + (0.04 + Math.random() * 0.06) + ')';
+      skCtx.beginPath();
+      skCtx.arc(cx, cy, 20 + Math.random() * 35, 0, Math.PI * 2);
+      skCtx.arc(cx + 25, cy - 10, 15 + Math.random() * 25, 0, Math.PI * 2);
+      skCtx.fill();
+    }
+    const skyTex = new THREE.CanvasTexture(skyCanvas);
+    skyTex.colorSpace = THREE.SRGBColorSpace;
+    skyTex.minFilter = THREE.LinearFilter;
+    skyTex.magFilter = THREE.LinearFilter;
 
-      if (this.skyDome) {
-        this.skyDome.material.map = worldTex;
-        this.skyDome.material.needsUpdate = true;
-      } else {
-        const skyGeo = new THREE.SphereGeometry(90, 32, 32);
-        const skyMat = new THREE.MeshBasicMaterial({ map: worldTex, side: THREE.BackSide, depthWrite: false });
-        this.skyDome = new THREE.Mesh(skyGeo, skyMat);
-        this.skyDome.renderOrder = -1;
-        this.scene.add(this.skyDome);
-      }
-    });
+    if (this.skyDome) {
+      this.skyDome.material.map = skyTex;
+      this.skyDome.material.needsUpdate = true;
+    } else {
+      const skyGeo = new THREE.SphereGeometry(90, 32, 32);
+      const skyMat = new THREE.MeshBasicMaterial({ map: skyTex, side: THREE.BackSide, depthWrite: false });
+      this.skyDome = new THREE.Mesh(skyGeo, skyMat);
+      this.skyDome.renderOrder = -1;
+      this.scene.add(this.skyDome);
+    }
   },
 
   getLaneX(laneIndex) { return this.lanePositions[laneIndex] || 0; },

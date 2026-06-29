@@ -14,13 +14,7 @@ const Collectibles3D = {
     while (group.children.length > 0) group.remove(group.children[0]);
     this.pool = []; this.activeList = []; this.spawnTimer = 0;
 
-    // 加载图标纹理
-    const iconNames = ['cash-bill', 'energy-drink', 'stock-option', 'shield-token', 'skill-book'];
-    iconNames.forEach(name => {
-      const tex = new THREE.TextureLoader().load('assets/items/item-' + name + '.png');
-      tex.colorSpace = THREE.SRGBColorSpace;
-      this.itemTextures[name] = tex;
-    });
+    // 道具已改用纯色3D几何体，不再加载外部PNG（避免 file:// CORS 报错）
 
     // 5种收集品定义（现在用图标plane）
     const typeDefs = [

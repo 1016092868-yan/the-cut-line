@@ -21,16 +21,7 @@ const Obstacles3D = {
       group.remove(c);
     }
 
-    // 加载 6 种障碍物纹理
-    const texLoader = new THREE.TextureLoader();
-    const texNames = ['deadline', 'toxic-boss', 'traffic-jam', 'burnout', 'market-crash', 'sick-wave'];
-    texNames.forEach(name => {
-      const tex = texLoader.load('assets/items/obstacle-' + name + '.png');
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.minFilter = THREE.LinearMipmapLinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      this.textures[name] = tex;
-    });
+    // 纹理已改用纯色 MeshToonMaterial，不再加载外部PNG（避免 file:// CORS 报错）
 
     // 障碍物定义（含下滑专用低矮型 + 跳跃专用高空型）
     this.types = [
