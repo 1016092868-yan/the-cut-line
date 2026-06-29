@@ -8,13 +8,20 @@ const ModelLoader = {
   cache: {},
 
   init() {
-    this.loader = new THREE.GLTFLoader();
+    if (typeof THREE !== 'undefined' && THREE.GLTFLoader) {
+      this.loader = new THREE.GLTFLoader();
+      this._available = true;
+    } else {
+      console.warn('[ModelLoader] THREE.GLTFLoader 不可用，GLB加载已禁用');
+      this._available = false;
+    }
   },
 
   /** 加载单个模型（带缓存 + 超时回退） */
   async load(key, path) {
     if (this.cache[key]) return this.cache[key].clone();
-    if (!this.loader) this.init();
+    if (this.loader === null) this.init();
+    if (!this._available) return null; // GLTFLoader不可用，直接返回null走程序化回退
 
     return new Promise((resolve) => {
       let settled = false;
